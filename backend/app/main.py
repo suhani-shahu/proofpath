@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.supabase import supabase
 from app.api.jobs import router as jobs_router
+from app.api.missions import router as missions_router
+from app.api.evaluations import router as evaluations_router
 
 app = FastAPI(
     title="ProofPath API",
@@ -18,6 +20,8 @@ app.add_middleware(
 )
 
 app.include_router(jobs_router)
+app.include_router(missions_router)
+app.include_router(evaluations_router)
 
 @app.get("/health")
 async def health():
