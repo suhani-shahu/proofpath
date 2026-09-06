@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { getSessionId } from "@/lib/session";
 
 interface Mission {
   id: string;
@@ -41,12 +42,14 @@ export default function MissionsPage() {
     if (submission.trim().length < 20) return;
     setLoading(true);
     try {
+      const sessionId = getSessionId();
       const res = await fetch("http://localhost:8000/api/evaluations/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mission_id: selected!.id,
           submission: submission,
+          session_id: sessionId,
         }),
       });
       const data = await res.json();
@@ -67,7 +70,7 @@ export default function MissionsPage() {
   return (
     <main className="min-h-screen bg-black text-white p-10">
       <div className="max-w-4xl mx-auto">
-        <a href="/" className="text-gray-400 text-sm mb-6 block">← Back to Home</a>
+        <a href="/" className="text-gray-400 text-sm mb-6 block">Back to Home</a>
         <h1 className="text-4xl font-bold mb-2">Proof Missions</h1>
         <p className="text-gray-400 mb-8">Complete a mission to demonstrate your capability.</p>
 
@@ -76,7 +79,11 @@ export default function MissionsPage() {
             {missions.map((mission) => (
               <div
                 key={mission.id}
-                onClick={() => { setSelected(mission); setEvaluation(null); setSubmission(""); }}
+                onClick={() => {
+                  setSelected(mission);
+                  setEvaluation(null);
+                  setSubmission("");
+                }}
                 className="bg-gray-900 border border-gray-700 rounded-xl p-6 cursor-pointer hover:border-white transition"
               >
                 <span className="text-xs text-blue-400 font-semibold uppercase">{mission.capability}</span>
@@ -91,7 +98,9 @@ export default function MissionsPage() {
           </div>
         ) : !evaluation ? (
           <div>
-            <button onClick={() => setSelected(null)} className="text-gray-400 text-sm mb-6 block">← Back to Missions</button>
+            <button onClick={() => setSelected(null)} className="text-gray-400 text-sm mb-6 block">
+              Back to Missions
+            </button>
             <div className="bg-gray-900 border border-gray-700 rounded-xl p-8 mb-6">
               <span className="text-blue-400 text-sm font-semibold uppercase">{selected.capability}</span>
               <h2 className="text-3xl font-bold mt-2 mb-4">{selected.title}</h2>
@@ -109,7 +118,7 @@ export default function MissionsPage() {
             <textarea
               value={submission}
               onChange={(e) => setSubmission(e.target.value)}
-              placeholder="Paste your GitHub repo URL and explain your solution in detail..."
+              placeholder="Paste your GitHub repo URL and explain your solution..."
               className="w-full h-40 bg-gray-900 border border-gray-700 rounded-xl p-4 text-white resize-none mb-4"
             />
             <button
@@ -122,11 +131,12 @@ export default function MissionsPage() {
           </div>
         ) : (
           <div>
-            <button onClick={() => setSelected(null)} className="text-gray-400 text-sm mb-6 block">← Back to Missions</button>
+            <button onClick={() => setSelected(null)} className="text-gray-400 text-sm mb-6 block">
+              Back to Missions
+            </button>
             <div className="bg-gray-900 border border-gray-700 rounded-xl p-8 mb-6">
               <h2 className="text-2xl font-bold mb-2">Mission Evaluation</h2>
               <p className="text-gray-400 mb-6">{selected.title}</p>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 {[
                   { label: "Correctness", value: evaluation.correctness },
@@ -140,7 +150,6 @@ export default function MissionsPage() {
                   </div>
                 ))}
               </div>
-
               <div className="flex items-center gap-4 mb-6 p-4 bg-black rounded-xl">
                 <div className="text-5xl font-bold">{evaluation.overall_score}</div>
                 <div>
@@ -150,10 +159,8 @@ export default function MissionsPage() {
                   <div className="text-gray-400 text-sm">Overall Score</div>
                 </div>
               </div>
-
               <p className="text-gray-300 mb-6">{evaluation.feedback}</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <h4 className="font-semibold text-green-400 mb-2">Strengths</h4>
                   <ul className="space-y-1">
@@ -171,10 +178,20 @@ export default function MissionsPage() {
                   </ul>
                 </div>
               </div>
+              <button
+                onClick={() => { window.location.href = "/dashboard"; }}
+                className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition"
+              >
+                View Updated Dashboard
+              </button>
             </div>
             <button
-              onClick={() => { setSelected(null); setEvaluation(null); setSubmission(""); }}
-              className="bg-white text-black px-6 py-3 rounded-xl font-semibold"
+              onClick={() => {
+                setSelected(null);
+                setEvaluation(null);
+                setSubmission("");
+              }}
+              className="bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold"
             >
               Try Another Mission
             </button>

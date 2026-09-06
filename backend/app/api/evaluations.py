@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from app.services.evaluation_service import evaluate_submission
+from app.services.session_service import update_demonstrated_capability
 from app.api.missions import MISSIONS
 
 router = APIRouter(
@@ -11,6 +12,7 @@ router = APIRouter(
 class EvaluationRequest(BaseModel):
     mission_id: str
     submission: str
+    session_id: str | None = None
 
 @router.post("/evaluate")
 async def evaluate(request: EvaluationRequest):
@@ -29,5 +31,12 @@ async def evaluate(request: EvaluationRequest):
         requirements=mission["requirements"],
         submission=request.submission
     )
+
+    if request.session_id and result.get("overall_score", 0) >= 60:
+        update_demonstrated_capability(
+            session_id=request.session_id,
+            capability=mission["capability"],
+            score=result.get("overall_score", 0)
+        )
 
     return result

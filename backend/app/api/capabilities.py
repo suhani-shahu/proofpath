@@ -1,84 +1,55 @@
 from fastapi import APIRouter
+from app.services.session_service import get_session_data
 
 router = APIRouter(
     prefix="/api/capabilities",
     tags=["Capabilities"]
 )
 
-USER_CAPABILITIES = [
-    {
-        "name": "Docker",
-        "category": "Containerization",
-        "status": "DEMONSTRATED",
-        "confidence": 86,
-        "evidence": ["Resume mention", "Proof Mission completed"],
-        "score": 86
-    },
-    {
-        "name": "AWS",
-        "category": "Cloud",
-        "status": "PARTIAL",
-        "confidence": 45,
-        "evidence": ["Resume mention"],
-        "score": 45
-    },
-    {
-        "name": "Linux",
-        "category": "Operating Systems",
-        "status": "PARTIAL",
-        "confidence": 50,
-        "evidence": ["Resume mention"],
-        "score": 50
-    },
-    {
-        "name": "CI/CD",
-        "category": "DevOps",
-        "status": "UNKNOWN",
-        "confidence": 0,
-        "evidence": [],
-        "score": 0
-    },
-    {
-        "name": "Python",
-        "category": "Programming",
-        "status": "DEMONSTRATED",
-        "confidence": 80,
-        "evidence": ["Resume mention", "GitHub projects"],
-        "score": 80
-    },
-    {
-        "name": "Git",
-        "category": "Version Control",
-        "status": "DEMONSTRATED",
-        "confidence": 75,
-        "evidence": ["Resume mention", "GitHub activity"],
-        "score": 75
-    },
-    {
-        "name": "Monitoring",
-        "category": "DevOps",
-        "status": "UNKNOWN",
-        "confidence": 0,
-        "evidence": [],
-        "score": 0
-    }
-]
-
 @router.get("/")
-async def get_capabilities():
-    total = len(USER_CAPABILITIES)
-    demonstrated = len([c for c in USER_CAPABILITIES if c["status"] == "DEMONSTRATED"])
-    partial = len([c for c in USER_CAPABILITIES if c["status"] == "PARTIAL"])
-    unknown = len([c for c in USER_CAPABILITIES if c["status"] == "UNKNOWN"])
-    readiness = round((demonstrated * 100 + partial * 50) / total)
+async def get_capabilities(session_id: str = "default"):
+    session = get_session_data(session_id)
+    
+    job_capabilities = session.get("job_capabilities", [])
+    demonstrated = session.get("demonstrated_capabilities", [])
+    demonstrated_names = [d["name"] for d in demonstrated]
+
+    capabilities = []
+
+    for cap in job_capabilities:
+        name = cap.get("name", "")
+        is_demonstrated = any(
+            name.lower() in d.lower() or d.lower() in name.lower()
+            for d in demonstrated_names
+        )
+        
+        demo_data = next(
+            (d for d in demonstrated if name.lower() in d["name"].lower()),
+            None
+        )
+
+        capabilities.append({
+            "name": name,
+            "category": cap.get("category", "General"),
+            "status": "DEMONSTRATED" if is_demonstrated else "UNKNOWN",
+            "confidence": demo_data["score"] if demo_data else 0,
+            "evidence": ["Proof Mission completed"] if is_demonstrated else [],
+            "score": demo_data["score"] if demo_data else 0
+        })
+
+    total = len(capabilities)
+    demonstrated_count = len([c for c in capabilities if c["status"] == "DEMONSTRATED"])
+    unknown_count = len([c for c in capabilities if c["status"] == "UNKNOWN"])
+    readiness = round((demonstrated_count / total * 100)) if total > 0 else 0
 
     return {
-        "capabilities": USER_CAPABILITIES,
+        "capabilities": capabilities,
+        "job_role": session.get("job_role", ""),
         "summary": {
             "total": total,
-            "demonstrated": demonstrated,
-            "partial": partial,
-            "unknown": unknown,
+            "demonstrated": demonstrated_count,
+            "partial": 0,
+            "unknown": unknown_count,
             "readiness_score": readiness
         }
     }
