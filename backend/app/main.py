@@ -5,6 +5,7 @@ from app.api.jobs import router as jobs_router
 from app.api.missions import router as missions_router
 from app.api.evaluations import router as evaluations_router
 from app.api.capabilities import router as capabilities_router
+from app.api.resume import router as resume_router
 
 app = FastAPI(
     title="ProofPath API",
@@ -24,6 +25,7 @@ app.include_router(jobs_router)
 app.include_router(missions_router)
 app.include_router(evaluations_router)
 app.include_router(capabilities_router)
+app.include_router(resume_router)
 
 @app.get("/health")
 async def health():
