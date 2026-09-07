@@ -6,6 +6,15 @@ router = APIRouter(
     tags=["Capabilities"]
 )
 
+MISSION_MAP = {
+    "docker": "docker-001",
+    "containeriz": "docker-001",
+    "ci/cd": "cicd-001",
+    "pipeline": "cicd-001",
+    "linux": "linux-001",
+    "server": "linux-001",
+}
+
 @router.get("/")
 async def get_capabilities(session_id: str = "default"):
     session = get_session_data(session_id)
@@ -34,13 +43,37 @@ async def get_capabilities(session_id: str = "default"):
             "status": "DEMONSTRATED" if is_demonstrated else "UNKNOWN",
             "confidence": demo_data["score"] if demo_data else 0,
             "evidence": ["Proof Mission completed"] if is_demonstrated else [],
-            "score": demo_data["score"] if demo_data else 0
+            "score": demo_data["score"] if demo_data else 0,
+            "importance": cap.get("importance", 50)
         })
 
     total = len(capabilities)
     demonstrated_count = len([c for c in capabilities if c["status"] == "DEMONSTRATED"])
     unknown_count = len([c for c in capabilities if c["status"] == "UNKNOWN"])
     readiness = round((demonstrated_count / total * 100)) if total > 0 else 0
+
+    unknown_caps = [c for c in capabilities if c["status"] == "UNKNOWN"]
+    unknown_caps.sort(key=lambda x: x.get("importance", 0), reverse=True)
+    
+    next_mission = None
+    if unknown_caps:
+        next_cap = unknown_caps[0]
+        next_cap_name = next_cap["name"].lower()
+        
+        mission_id = None
+        for keyword, mid in MISSION_MAP.items():
+            if keyword in next_cap_name:
+                mission_id = mid
+                break
+        
+        if not mission_id:
+            mission_id = "docker-001"
+        
+        next_mission = {
+            "capability": next_cap["name"],
+            "reason": f"{next_cap['name']} is required for your target role and has no evidence yet.",
+            "mission_id": mission_id
+        }
 
     return {
         "capabilities": capabilities,
@@ -51,5 +84,6 @@ async def get_capabilities(session_id: str = "default"):
             "partial": 0,
             "unknown": unknown_count,
             "readiness_score": readiness
-        }
+        },
+        "next_mission": next_mission
     }

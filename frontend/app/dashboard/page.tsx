@@ -19,10 +19,17 @@ interface Summary {
   readiness_score: number;
 }
 
+interface NextMission {
+  capability: string;
+  reason: string;
+  mission_id: string;
+}
+
 export default function DashboardPage() {
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [jobRole, setJobRole] = useState("");
+  const [nextMission, setNextMission] = useState<NextMission | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +40,7 @@ export default function DashboardPage() {
         setCapabilities(data.capabilities || []);
         setSummary(data.summary);
         setJobRole(data.job_role || "");
+        setNextMission(data.next_mission || null);
         setLoading(false);
       });
   }, []);
@@ -68,7 +76,7 @@ export default function DashboardPage() {
         {capabilities.length === 0 ? (
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-10 text-center">
             <p className="text-gray-400 mb-4">No capabilities yet!</p>
-            <p className="text-gray-500 text-sm mb-6">Start by analyzing a job description to see required capabilities.</p>
+            <p className="text-gray-500 text-sm mb-6">Start by analyzing a job description.</p>
             <a href="/jobs" className="bg-white text-black px-6 py-3 rounded-xl font-semibold">
               Analyze a Job
             </a>
@@ -93,6 +101,20 @@ export default function DashboardPage() {
                   <div className="text-4xl font-bold text-red-400">{summary.unknown}</div>
                   <div className="text-gray-400 text-sm mt-1">Not Proven</div>
                 </div>
+              </div>
+            )}
+
+            {nextMission && (
+              <div className="bg-blue-950 border border-blue-700 rounded-xl p-6 mb-8">
+                <p className="text-blue-400 text-xs font-semibold uppercase mb-2">Next Best Mission</p>
+                <h3 className="text-xl font-bold mb-2">Prove: {nextMission.capability}</h3>
+                <p className="text-gray-300 text-sm mb-4">{nextMission.reason}</p>
+                <button
+                  onClick={() => window.location.href = "/missions"}
+                  className="bg-blue-600 text-white px-5 py-2 rounded-xl font-semibold hover:bg-blue-700 transition"
+                >
+                  Start Mission
+                </button>
               </div>
             )}
 
@@ -124,13 +146,6 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-
-            <button
-              onClick={() => window.location.href="/missions"}
-              className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition"
-            >
-              Start a Proof Mission
-            </button>
           </>
         )}
       </div>
