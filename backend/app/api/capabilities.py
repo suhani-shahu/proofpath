@@ -6,6 +6,7 @@ router = APIRouter(
     tags=["Capabilities"]
 )
 
+# Only recommend capabilities that actually have a mission available
 MISSION_MAP = {
     "docker": "docker-001",
     "containeriz": "docker-001",
@@ -14,6 +15,13 @@ MISSION_MAP = {
     "linux": "linux-001",
     "server": "linux-001",
 }
+
+def find_mission_id(capability_name: str):
+    name_lower = capability_name.lower()
+    for keyword, mission_id in MISSION_MAP.items():
+        if keyword in name_lower:
+            return mission_id
+    return None
 
 @router.get("/")
 async def get_capabilities(session_id: str = "default"):
@@ -33,7 +41,7 @@ async def get_capabilities(session_id: str = "default"):
         )
         
         demo_data = next(
-            (d for d in demonstrated if name.lower() in d["name"].lower()),
+            (d for d in demonstrated if name.lower() in d["name"].lower() or d["name"].lower() in name.lower()),
             None
         )
 
@@ -52,22 +60,15 @@ async def get_capabilities(session_id: str = "default"):
     unknown_count = len([c for c in capabilities if c["status"] == "UNKNOWN"])
     readiness = round((demonstrated_count / total * 100)) if total > 0 else 0
 
+    # Only recommend capabilities that have an actual mission available
     unknown_caps = [c for c in capabilities if c["status"] == "UNKNOWN"]
-    unknown_caps.sort(key=lambda x: x.get("importance", 0), reverse=True)
+    available_caps = [c for c in unknown_caps if find_mission_id(c["name"])]
+    available_caps.sort(key=lambda x: x.get("importance", 0), reverse=True)
     
     next_mission = None
-    if unknown_caps:
-        next_cap = unknown_caps[0]
-        next_cap_name = next_cap["name"].lower()
-        
-        mission_id = None
-        for keyword, mid in MISSION_MAP.items():
-            if keyword in next_cap_name:
-                mission_id = mid
-                break
-        
-        if not mission_id:
-            mission_id = "docker-001"
+    if available_caps:
+        next_cap = available_caps[0]
+        mission_id = find_mission_id(next_cap["name"])
         
         next_mission = {
             "capability": next_cap["name"],
